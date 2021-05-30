@@ -1,23 +1,28 @@
 const coap = require("coap"), // or coap
   si = require("systeminformation"),
-  client = coap.request({
-    port: 5683,
-    observe: true,
-    pathname: "/Jgus",
+  updateSwitch = () => {
+    if (alertSwitch === true) console.log(`Please Charge note book`);
+  };
+var alertSwitch = false;
+
+var interval = setInterval(() => {
+  const client = coap.request({
+    hostname: "192.168.219.185",
+    pathname: "battery",
+    //observe: true,
   });
 
-const func = async () => {
-  const battery = await si.battery();
-  client.write(JSON.stringify(battery.percent));
+  client.on("response", async function (res) {
+    //console.log(client);
+    //res.pipe(process.stdout);
+    var percent = await JSON.parse(res.payload);
+    //console.log(res);
 
-  client.on("response", function (res) {
-    console.log(`on clienton func`);
-    res.pipe(process.stdout);
-    res.on("end", function () {
-      process.exit(0);
-    });
+    if (percent.percent < 30) {
+      alertSwitch = true;
+    } else alertSwitch = false;
+
+    updateSwitch();
   });
   client.end();
-};
-
-func();
+}, 5000);
